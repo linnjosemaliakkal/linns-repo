@@ -17,19 +17,20 @@ jobs:
           java-version: '11'
           distribution: 'temurin'
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.IAMROLE_GITHUB }}
+          aws-region: us-east-1
+
       - name: Build with Maven
         run: mvn -B package --file spring-boot-hello-world-example/pom.xml
 
       - name: Upload artifact to S3
-        uses: aws-actions/s3-sync@v2
-        with:
-          aws-region: us-east-1
-          bucket: codedeploystack-webappdeploymentbucket-seqdgxfeq2qg
-          source-dir: spring-boot-hello-world-example/target
-        env:
-          AWS_ROLE_ARN: ${{ secrets.IAMROLE_GITHUB }}
-          AWS_WEB_IDENTITY_TOKEN_FILE: /tmp/awscreds
-
+        run: |
+          aws s3 cp spring-boot-hello-world-example/target/spring-boot-hello-world-example-1.0-SNAPSHOT.war \
+          s3://codedeploystack-webappdeploymentbucket-seqdgxfeq2qg/
+          
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -38,15 +39,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Deploy with CodeDeploy
-        uses: aws-actions/aws-codedeploy@v1
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
+          role-to-assume: ${{ secrets.IAMROLE_GITHUB }}
           aws-region: us-east-1
-          application-name: CodeDeployAppNameWithASG
-          deployment-group: CodeDeployGroupName
-          bundle-type: zip
-          s3-bucket: codedeploystack-webappdeploymentbucket-seqdgxfeq2qg
-          s3-key: spring-boot-hello-world-example-1.0-SNAPSHOT.war
-        env:
-          AWS_ROLE_ARN: ${{ secrets.IAMROLE_GITHUB }}
-          AWS_WEB_IDENTITY_TOKEN_FILE: /tmp/awscreds
+
+      - name: Deploy with CodeDeploy
+        run: |
+          aws deploy create-deployment \
+            --application-name CodeDeployAppNameWithASG \
+            --deployment-group-name CodeDeployGroupName \
+            --s3-location bucket=codedeploystack-webappdeploymentbucket-seqdgxfeq2qg,bundleType=war,key=spring-boot-hello-world-example-1.0-SNAPSHOT.war
