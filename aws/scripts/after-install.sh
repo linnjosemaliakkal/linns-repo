@@ -1,16 +1,12 @@
 #!/bin/bash
 set -e
 
-WAR_FILE=spring-boot-hello-world-example-1.0-SNAPSHOT.war
-TOMCAT_HOME=/usr/share/tomcat/webapps
+S3_BUCKET=codedeploystack-webappdeploymentbucket-seqdgxefq2qg
+WAR_FILE=SpringBootHelloWorldExampleApplication.war
+TOMCAT_HOME=/usr/local/tomcat9/webapps
 
-echo "=== AfterInstall: Deploying WAR ==="
-mkdir -p $TOMCAT_HOME
+echo "=== AfterInstall: Copying WAR from S3 to Tomcat ==="
 
-if [ ! -f /tmp/$WAR_FILE ]; then
-    echo "ERROR: WAR file not found in /tmp/"
-    exit 1
-fi
+aws s3 cp s3://$S3_BUCKET/$WAR_FILE $TOMCAT_HOME/$WAR_FILE
 
-cp /tmp/$WAR_FILE $TOMCAT_HOME/
-echo "WAR copied successfully to $TOMCAT_HOME"
+echo "WAR deployed to $TOMCAT_HOME"
