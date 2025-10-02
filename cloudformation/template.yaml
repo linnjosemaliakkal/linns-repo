@@ -3,6 +3,11 @@ name: Build and Deploy
 on:
   workflow_dispatch:
 
+env:
+  applicationfolder: spring-boot-hello-world-example
+  AWS_REGION: us-east-1
+  S3BUCKET: codedeploystack-webappdeploymentbucket-seqdgxfeq2qg
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,15 +26,15 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.IAMROLE_GITHUB }}
-          aws-region: us-east-1
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Build with Maven
-        run: mvn -B package --file spring-boot-hello-world-example/pom.xml
+        run: mvn -B package --file ${{ env.applicationfolder }}/pom.xml
 
       - name: Upload artifact to S3
         run: |
-          aws s3 cp spring-boot-hello-world-example/target/spring-boot-hello-world-example-1.0-SNAPSHOT.war \
-          s3://codedeploystack-webappdeploymentbucket-seqdgxfeq2qg/
+          aws s3 cp ${{ env.applicationfolder }}/target/${{ env.applicationfolder }}-1.0-SNAPSHOT.war \
+          s3://${{ env.S3BUCKET }}/
           
   deploy:
     needs: build
@@ -43,11 +48,11 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.IAMROLE_GITHUB }}
-          aws-region: us-east-1
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Deploy with CodeDeploy
         run: |
           aws deploy create-deployment \
             --application-name CodeDeployAppNameWithASG \
             --deployment-group-name CodeDeployGroupName \
-            --s3-location bucket=codedeploystack-webappdeploymentbucket-seqdgxfeq2qg,bundleType=war,key=spring-boot-hello-world-example-1.0-SNAPSHOT.war
+            --s3-location bucket=${{ env.S3BUCKET }},bundleType=war,key=${{ env.applicationfolder }}-1.0-SNAPSHOT.war
