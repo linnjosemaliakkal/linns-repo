@@ -1,4 +1,5 @@
 #!/bin/bash
+<<<<<<< HEAD
 set -x
 
 NUMBER_OF_ATTEMPTS=10
@@ -18,3 +19,9 @@ do
 done
 echo "Server did not come up after expected time. Failing."
 exit 1
+=======
+set -e
+
+echo "=== Validating application ==="
+curl -f http://localhost:8080/SpringBootHelloWorldExampleApplication || exit 1
+>>>>>>> d6e98a5 (Add validate-service.sh script)
