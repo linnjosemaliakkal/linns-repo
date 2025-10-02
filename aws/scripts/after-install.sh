@@ -8,13 +8,19 @@ TOMCAT_HOME=/usr/share/tomcat/webapps
 
 echo "=== AfterInstall: Copying WAR to Tomcat webapps ==="
 
-# Optionally copy WAR from S3 if needed
-# aws s3 cp s3://codedeploystack-webappdeploymentbucket-seqdgxefq2qg/SpringBootHelloWorldExampleApplication.war /usr/local/tomcat9/webapps/SpringBootHelloWorldExampleApplication.war
-
 # Ensure tomcat directory exists
-mkdir -p $TOMCAT_HOME
+if [ ! -d "$TOMCAT_HOME" ]; then
+	echo "Tomcat directory $TOMCAT_HOME does not exist. Creating it."
+	mkdir -p "$TOMCAT_HOME" || { echo "Failed to create Tomcat directory $TOMCAT_HOME"; exit 1; }
+fi
+
+# Check if WAR file exists
+if [ ! -f "/tmp/$WAR_FILE" ]; then
+	echo "WAR file /tmp/$WAR_FILE does not exist! Deployment cannot continue."
+	exit 1
+fi
 
 # Copy WAR from /tmp (where CodeDeploy placed it) to Tomcat
-cp /tmp/$WAR_FILE $TOMCAT_HOME/
+cp "/tmp/$WAR_FILE" "$TOMCAT_HOME/" || { echo "Failed to copy WAR file to $TOMCAT_HOME"; exit 1; }
 
 echo "WAR copied to $TOMCAT_HOME"
