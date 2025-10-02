@@ -1,63 +1,52 @@
 name: Build and Deploy
 
 on:
-  workflow_dispatch: {}
-
-env:
-  applicationfolder: spring-boot-hello-world-example
-  AWS_REGION: us-east-1
-  S3BUCKET: codedeploystack-webappdeploymentbucket-seqdgxefq2q
-
+  workflow_dispatch:
 
 jobs:
   build:
-    name: Build and Package
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
+
     steps:
-      - uses: actions/checkout@v2
-        name: Checkout Repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      - uses: aws-actions/configure-aws-credentials@v1
+      - name: Set up JDK 11
+        uses: actions/setup-java@v3
         with:
-          role-to-assume: ${{ secrets.IAMROLE_GITHUB }}
-          role-session-name: GitHub-Action-Role
-          aws-region: ${{ env.AWS_REGION }}
+          java-version: '11'
+          distribution: 'temurin'
 
-      - name: Set up JDK 1.8
-        uses: actions/setup-java@v1
+      - name: Build with Maven
+        run: mvn -B package --file spring-boot-hello-world-example/pom.xml
+
+      - name: Upload artifact to S3
+        uses: aws-actions/s3-sync@v2
         with:
-          java-version: 1.8
+          aws-region: us-east-1
+          bucket: codedeploystack-webappdeploymentbucket-seqdgxfeq2qg
+          source-dir: spring-boot-hello-world-example/target
+        env:
+          AWS_ROLE_ARN: ${{ secrets.IAMROLE_GITHUB }}
+          AWS_WEB_IDENTITY_TOKEN_FILE: /tmp/awscreds
 
-      - name: chmod
-        run: chmod -R +x ./.github
-
-      - name: Build and Package Maven
-        id: package
-        working-directory: ${{ env.applicationfolder }}
-        run: $GITHUB_WORKSPACE/.github/scripts/build.sh
-
-      - name: Upload Artifact to s3
-        working-directory: ${{ env.applicationfolder }}/target
-        run: aws s3 cp *.war s3://${{ env.S3BUCKET }}/
-        
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    environment: Dev
-    permissions:
-      id-token: write
-      contents: read
+
     steps:
-    - uses: actions/checkout@v2
-    - uses: aws-actions/configure-aws-credentials@v1
-      with:
-        role-to-assume: ${{ secrets.IAMROLE_GITHUB }}
-        role-session-name: GitHub-Action-Role
-        aws-region: ${{ env.AWS_REGION }}
-    - run: |
-        echo "Deploying branch ${{ env.GITHUB_REF }} to ${{ github.event.inputs.environment }}"
-        commit_hash=`git rev-parse HEAD`
-        aws deploy create-deployment --application-name CodeDeployAppNameWithASG --deployment-group-name CodeDeployGroupName --github-location repository=$GITHUB_REPOSITORY,commitId=$commit_hash --ignore-application-stop-failures
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Deploy with CodeDeploy
+        uses: aws-actions/aws-codedeploy@v1
+        with:
+          aws-region: us-east-1
+          application-name: CodeDeployAppNameWithASG
+          deployment-group: CodeDeployGroupName
+          bundle-type: zip
+          s3-bucket: codedeploystack-webappdeploymentbucket-seqdgxfeq2qg
+          s3-key: spring-boot-hello-world-example-1.0-SNAPSHOT.war
+        env:
+          AWS_ROLE_ARN: ${{ secrets.IAMROLE_GITHUB }}
+          AWS_WEB_IDENTITY_TOKEN_FILE: /tmp/awscreds
