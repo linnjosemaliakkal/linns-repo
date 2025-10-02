@@ -1,17 +1,9 @@
 version: 0.0
 os: linux
 files:
-  - source: /aws
-    destination: /usr/local/codedeployresources
+  - source: spring-boot-hello-world-example/target/spring-boot-hello-world-example-1.0-SNAPSHOT.war
+    destination: /tmp
 hooks:
-  ApplicationStop:
-    - location: aws/scripts/application-stop.sh
-      timeout: 300
-      runas: root
-  BeforeInstall:
-    - location: aws/scripts/before-install.sh
-      timeout: 300
-      runas: root
   AfterInstall:
     - location: aws/scripts/after-install.sh
       timeout: 300
