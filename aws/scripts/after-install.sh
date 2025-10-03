@@ -1,12 +1,8 @@
 #!/bin/bash
-set -e
+set -xe
 
-S3_BUCKET=codedeploystack-webappdeploymentbucket-awyh8dg2trdb
-WAR_FILE=SpringBootHelloWorldExampleApplication.war
-TOMCAT_HOME=/usr/local/tomcat9/webapps
+# Copy war file from S3 bucket to tomcat webapp folder
+aws s3 cp s3://codedeploystack-webappdeploymentbucket-avyh8dg2trdb/spring-boot-hello-world-example-1.0-SNAPSHOT.war /usr/local/tomcat9/webapps/spring-boot-hello-world-example-1.0-SNAPSHOT.war
 
-echo "=== AfterInstall: Copying WAR from S3 to Tomcat ==="
-
-aws s3 cp s3://$S3_BUCKET/$WAR_FILE $TOMCAT_HOME/$WAR_FILE
-
-echo "WAR deployed to $TOMCAT_HOME"
+# Ensure the ownership permissions are correct.
+chown -R tomcat:tomcat /usr/local/tomcat9/webapps
