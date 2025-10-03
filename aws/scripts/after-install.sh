@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-S3_BUCKET=codedeploystack-webappdeploymentbucket-seqdgxefq2qg
+S3_BUCKET=codedeploystack-webappdeploymentbucket-awyh8dg2trdb
 WAR_FILE=SpringBootHelloWorldExampleApplication.war
 TOMCAT_HOME=/usr/local/tomcat9/webapps
 
