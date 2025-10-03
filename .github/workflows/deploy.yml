@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  id-token: write   # ✅ required for OIDC
-  contents: read    # ✅ required for checkout
+  id-token: write      # ✅ Required for OIDC authentication
+  contents: read       # ✅ Required for checkout
 
 env:
   applicationfolder: spring-boot-hello-world-example
@@ -28,13 +28,13 @@ jobs:
           java-version: '11'
           distribution: 'temurin'
 
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.IAMROLE_GITHUB }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: 🔎 Test AWS credentials
+      - name: 🔍 Debug AWS identity
         run: aws sts get-caller-identity
 
       - name: Build with Maven
@@ -53,11 +53,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.IAMROLE_GITHUB }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: 🔍 Debug AWS identity
+        run: aws sts get-caller-identity
 
       - name: Deploy with CodeDeploy
         run: |
@@ -65,6 +68,7 @@ jobs:
             --application-name ${{ env.APPLICATION_NAME }} \
             --deployment-group-name ${{ env.DEPLOYMENT_GROUP }} \
             --s3-location bucket=${{ env.S3BUCKET }},bundleType=war,key=${{ env.applicationfolder }}-1.0-SNAPSHOT.war
+
 
 
 
