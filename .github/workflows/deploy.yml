@@ -5,7 +5,7 @@ on:
 
 permissions:
   id-token: write   # ✅ required for OIDC
-  contents: read    # ✅ required for actions/checkout
+  contents: read    # ✅ required for checkout
 
 env:
   applicationfolder: spring-boot-hello-world-example
@@ -33,6 +33,9 @@ jobs:
         with:
           role-to-assume: ${{ secrets.IAMROLE_GITHUB }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: 🔎 Test AWS credentials
+        run: aws sts get-caller-identity
 
       - name: Build with Maven
         run: mvn -B package --file ${{ env.applicationfolder }}/pom.xml
@@ -62,5 +65,7 @@ jobs:
             --application-name ${{ env.APPLICATION_NAME }} \
             --deployment-group-name ${{ env.DEPLOYMENT_GROUP }} \
             --s3-location bucket=${{ env.S3BUCKET }},bundleType=war,key=${{ env.applicationfolder }}-1.0-SNAPSHOT.war
+
+
 
 
